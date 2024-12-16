@@ -1,4 +1,4 @@
-name: test
+name: Test
 
 on:
   push:
@@ -14,25 +14,41 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Foundry project
+    name: Foundry Project
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      # Checkout the repository and its submodules
+      - name: Checkout Code
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
+      # Install the Foundry toolchain
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
 
-      - name: Run Forge build
+      # Cache Forge dependencies (if applicable)
+      - name: Cache Forge Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.foundry
+          key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-foundry-
+
+      # Run Forge Build to compile the project and check for sizes
+      - name: Run Forge Build
         run: |
           forge --version
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
+      # Run Forge tests and output detailed logs for troubleshooting
+      - name: Run Forge Tests
         run: |
           forge test -vvv
         id: test
+        continue-on-error: false  # Ensure that failing tests stop the pipeline
